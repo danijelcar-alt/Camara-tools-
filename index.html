@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Camara</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Camara">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<link id="icon" rel="apple-touch-icon" href="">
+<style>
+:root{--st:env(safe-area-inset-top,0px);--sb:max(env(safe-area-inset-bottom,0px),34px);box-sizing:border-box}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{height:100%;margin:0;background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Helvetica,Arial,sans-serif;overflow:hidden;overscroll-behavior:none;touch-action:manipulation}
+#app{position:fixed;inset:0;background:#000;overflow:hidden}
+video{display:none;object-fit:cover;width:100%;height:100%;position:absolute;inset:0;transition:transform .35s cubic-bezier(.3,.7,.3,1)}
+#bg{filter:blur(28px) brightness(.32) saturate(1.2);transform:scale(1.3)!important}
+.view{position:absolute;left:0;right:0;overflow:hidden;background:#0b0b0c;top:calc(var(--st) + 67px);bottom:calc(var(--sb) + 176px)}
+.vid .view{top:var(--st);bottom:calc(var(--sb) + 64px)}
+.empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#8e8e93;font-size:15px}
+.empty button{background:#ffd60a;color:#000;border:0;border-radius:22px;padding:11px 22px;font-size:16px;font-weight:600}
+.blink{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none}
+.blink.go{animation:bl .2s}
+@keyframes bl{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
+.focus{position:absolute;width:78px;height:78px;border:1.5px solid #ffd60a;opacity:0;pointer-events:none;transform:translate(-50%,-50%);z-index:2}
+.focus.go{animation:fc 1.6s forwards}
+@keyframes fc{0%{opacity:1;transform:translate(-50%,-50%) scale(1.35)}15%{opacity:1;transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
+.zooms{position:absolute;bottom:18px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:10px;z-index:3}
+.vid .zooms{bottom:127px}
+.zooms button{width:40px;height:40px;border-radius:50%;border:0;background:none;color:#fff;font:500 17px ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,sans-serif;padding:0;text-shadow:0 0 6px rgba(0,0,0,.4)}
+.zooms button.on{width:44px;height:44px;background:rgba(40,42,48,.82);color:#ffd60a;font-size:17px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.tools{position:absolute;right:16px;top:calc(var(--st) + 17px);height:37px;width:142px;border-radius:19px;background:rgba(44,44,46,.72);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:space-around;padding:0 4px;z-index:5}
+.tools svg{width:24px;height:24px}
+.tools .vi,.res{display:none}
+.vid .tools .vi{display:block}.vid .tools .ph{display:none}.vid .tools{width:74px}
+.res{position:absolute;left:16px;top:calc(var(--st) + 17px);height:37px;padding:0 15px;border-radius:19px;background:rgba(44,44,46,.72);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);align-items:center;gap:11px;font:500 20px ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,sans-serif;font-feature-settings:'zero' 1;z-index:5}
+.res sup{font-size:11px;color:#c7c7cc;font-weight:500;vertical-align:baseline;position:relative;top:-6px;margin-left:1px}
+.vid .res{display:flex}
+.rec{position:absolute;left:50%;top:calc(var(--st) + 17px);transform:translateX(-50%);height:37px;display:none;align-items:center;gap:7px;background:#ff3b30;border-radius:19px;padding:0 14px;font:600 17px ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,sans-serif;font-variant-numeric:tabular-nums;z-index:5}
+.rec i{width:8px;height:8px;border-radius:50%;background:#fff}
+.recording .rec{display:flex}
+.shutter{position:absolute;left:50%;bottom:calc(var(--sb) + 80px);transform:translateX(-50%);width:80px;height:80px;border-radius:50%;border:6px solid #3a3a3c;background:none;padding:0;display:flex;align-items:center;justify-content:center;z-index:5}
+.shutter b{width:68px;height:68px;border-radius:50%;background:#fff;transition:.2s;flex:none}
+.shutter:active b{transform:scale(.92)}
+.vid .shutter b{background:#ea4b46}
+.recording .shutter b{width:32px;height:32px;border-radius:8px}
+.row{position:absolute;left:0;right:0;bottom:var(--sb);height:48px;z-index:5}
+.thumb{position:absolute;left:16px;top:0;width:48px;height:48px;border-radius:50%;background:#1c1c1e center/cover}
+.flip{position:absolute;right:16px;top:0;width:48px;height:48px;border-radius:50%;background:#1f1f21;border:0;padding:0;display:flex;align-items:center;justify-content:center}
+.flip svg{transition:transform .5s}
+.pill{position:absolute;left:50%;top:0;transform:translateX(-50%);width:187px;height:48px;border-radius:24px;background:#212123}
+.pill .hl{position:absolute;left:2.5px;top:2.5px;width:95px;height:43px;border-radius:22px;background:#121213;border:1.5px solid rgba(255,255,255,.2);transition:transform .3s cubic-bezier(.3,.7,.3,1)}
+.pill span{position:absolute;top:0;width:85px;text-align:center;line-height:48px;font:500 16.5px ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:.7px;color:#fff}
+.pill #m0{left:7.5px}.pill #m1{left:92.5px}
+.pill span.on{color:#ffd60a}
+.recording .pill,.recording .flip{visibility:hidden}
+input{display:none}
+</style>
+</head>
+<body>
+<div id="app" class="photo">
+  <video id="bg" playsinline muted loop></video>
+  <div class="view" id="view">
+    <video id="v" playsinline webkit-playsinline muted loop></video>
+    <div class="empty" id="empty"><div>Add a video to preview</div><button id="add">Add Video</button></div>
+    <div class="focus" id="focus"></div>
+    <div class="blink" id="blink"></div>
+    <div class="zooms" id="zooms"><button data-z="0.5">.5</button><button class="on" data-z="1">1&times;</button><button data-z="2">2</button></div>
+  </div>
+  <div class="res"><span>4K<sup>RES</sup></span><span>60<sup>FPS</sup></span></div>
+  <div class="tools">
+    <svg class="ph" viewBox="0 0 24 24" fill="#fff"><path d="M10.5 3.5a8.5 8.5 0 1 0 10 10.8 7 7 0 0 1-10-10.8z"/><circle cx="17" cy="4.5" r="1" /><circle cx="20.5" cy="8" r=".9"/><circle cx="14.5" cy="6" r=".8"/></svg>
+    <svg class="ph" viewBox="0 0 24 24" fill="#fff"><path d="M12 2 5 13h5l-1.5 8 7-11.5h-5z"/><circle cx="18" cy="17.5" r="4.2" fill="#3a3a3c" stroke="#fff" stroke-width="1.2"/><text x="18" y="20" font-size="6.5" font-weight="700" text-anchor="middle" fill="#fff" font-family="sans-serif">A</text></svg>
+    <svg class="ph" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6"><circle cx="12" cy="12" r="10" stroke-dasharray="1.4 2.2" stroke-linecap="round"/><circle cx="12" cy="12" r="6.2"/><circle cx="12" cy="12" r="1.7" fill="#fff" stroke="none"/><path d="M4 20 20 4" stroke-width="2.2" stroke-linecap="round"/></svg>
+    <svg class="vi" viewBox="0 0 24 24" fill="#fff"><path d="M13 2 6 12.5h5L10 21l7-10.5h-5z"/><path d="M4 21 20 3" stroke="#2c2c2e" stroke-width="4.5"/><path d="M4 21 20 3" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <svg viewBox="0 0 24 24" fill="#fff"><circle cx="5" cy="8" r="2.2"/><circle cx="12" cy="8" r="2.2"/><circle cx="19" cy="8" r="2.2"/><circle cx="5" cy="16" r="2.2"/><circle cx="12" cy="16" r="2.2"/><circle cx="19" cy="16" r="2.2"/></svg>
+  </div>
+  <div class="rec"><i></i><span id="t">00:00</span></div>
+  <button class="shutter" id="shutter" aria-label="Shutter"><b></b></button>
+  <div class="row">
+    <div class="thumb" id="thumb"></div>
+    <div class="pill"><div class="hl" id="hl"></div><span id="m0">VIDEO</span><span id="m1" class="on">PHOTO</span></div>
+    <button class="flip" id="flip" aria-label="Flip camera"><svg id="fl" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a8 8 0 0 1 14-4.5L20 9M20 4v5h-5M20 13a8 8 0 0 1-14 4.5L4 15M4 20v-5h5"/></svg></button>
+  </div>
+  <input type="file" id="file" accept="video/*">
+</div>
+<script>
+// Generate iPhone-style camera icon for Home Screen
+(function(){
+  var c=document.createElement('canvas');c.width=c.height=180;var x=c.getContext('2d');
+  var g=x.createLinearGradient(0,0,0,180);g.addColorStop(0,'#d6d6db');g.addColorStop(1,'#8f8f95');
+  x.fillStyle=g;x.fillRect(0,0,180,180);
+  function rr(a,b,w,h,r){x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath();}
+  x.fillStyle='#1c1c1e';rr(24,54,132,86,18);x.fill();
+  rr(62,42,56,22,8);x.fill();
+  x.fillStyle='#ffd60a';x.beginPath();x.arc(136,70,5,0,7);x.fill();
+  x.fillStyle='#3a3a3c';x.beginPath();x.arc(90,97,32,0,7);x.fill();
+  x.fillStyle='#0a0a0c';x.beginPath();x.arc(90,97,25,0,7);x.fill();
+  var rg=x.createRadialGradient(84,90,2,90,97,22);rg.addColorStop(0,'#3d5a80');rg.addColorStop(1,'#0a0a1a');
+  x.fillStyle=rg;x.beginPath();x.arc(90,97,17,0,7);x.fill();
+  x.fillStyle='rgba(255,255,255,.7)';x.beginPath();x.arc(83,90,4,0,7);x.fill();
+  document.getElementById('icon').href=c.toDataURL('image/png');
+})();
+
+
+var $=function(i){return document.getElementById(i)};
+(function(){function fit(){var a=$('app');if(navigator.standalone&&innerHeight>innerWidth){a.style.bottom='auto';a.style.height=Math.max(innerHeight,screen.height)+'px'}}fit();addEventListener('resize',fit)})();
+var v=$('v'),bg=$('bg'),app=$('app'),url=null,mode=1,recording=false,elapsed=0,last=0,timer=null,flipped=false,zoom=1;
+function setMode(i){
+  if(recording)return;mode=i;
+  $('m0').classList.toggle('on',i===0);$('m1').classList.toggle('on',i===1);
+  $('hl').style.transform='translateX('+(i*85)+'px)';
+  app.classList.toggle('vid',i===0);app.classList.toggle('photo',i===1);
+  bg.style.display=(i===1&&v.src)?'block':'none';
+}
+$('m0').onclick=function(){setMode(0)};$('m1').onclick=function(){setMode(1)};
+var sx=null;$('view').addEventListener('touchstart',function(e){sx=e.touches[0].clientX},{passive:true});
+$('view').addEventListener('touchend',function(e){if(sx===null)return;var d=e.changedTouches[0].clientX-sx;sx=null;if(Math.abs(d)>60)setMode(d<0?1:0)});
+function pad(n){return String(n).padStart(2,'0')}
+function tick(){var n=Date.now();elapsed+=(n-last)/1000;last=n;var s=Math.floor(elapsed);$('t').textContent=pad(Math.floor(s/60))+':'+pad(s%60)}
+function applyT(){var k=zoom===0.5?1:zoom===1?1.25:2.5;v.style.transform='scale('+k+') scaleX('+(flipped?-1:1)+')'}
+document.querySelectorAll('#zooms button').forEach(function(b){b.onclick=function(e){e.stopPropagation();
+  zoom=parseFloat(b.dataset.z);document.querySelectorAll('#zooms button').forEach(function(x){x.classList.remove('on');x.textContent=x.dataset.z==='0.5'?'.5':x.dataset.z});
+  b.classList.add('on');if(zoom===1)b.innerHTML='1&times;';applyT()}});
+$('view').addEventListener('click',function(e){var r=$('view').getBoundingClientRect(),f=$('focus');
+  f.style.left=(e.clientX-r.left)+'px';f.style.top=(e.clientY-r.top)+'px';f.classList.remove('go');void f.offsetWidth;f.classList.add('go')});
+function pick(){$('file').click()}
+$('add').onclick=function(e){e.stopPropagation();pick()};$('thumb').onclick=pick;
+$('flip').onclick=function(){flipped=!flipped;$('fl').style.transform='rotate('+(flipped?180:0)+'deg)';
+  v.style.filter='blur(14px)';setTimeout(function(){v.style.filter='';applyT()},250)};
+$('file').onchange=function(){
+  var f=this.files[0];if(!f)return;if(url)URL.revokeObjectURL(url);
+  url=URL.createObjectURL(f);v.src=url;bg.src=url;v.muted=true;bg.muted=true;v.style.display='block';$('empty').style.display='none';applyT();
+  bg.style.display=mode===1?'block':'none';
+  v.play();bg.play();
+};
+function thumbFrom(){try{var c=document.createElement('canvas');c.width=100;c.height=100;
+  var r=Math.max(100/v.videoWidth,100/v.videoHeight);
+  c.getContext('2d').drawImage(v,(100-v.videoWidth*r)/2,(100-v.videoHeight*r)/2,v.videoWidth*r,v.videoHeight*r);
+  $('thumb').style.backgroundImage='url('+c.toDataURL()+')'}catch(e){}}
+$('shutter').onclick=function(){
+  if(!v.src){pick();return}
+  if(mode===1){var b=$('blink');b.classList.remove('go');void b.offsetWidth;b.classList.add('go');thumbFrom();return}
+  if(!recording){recording=true;app.classList.add('recording');elapsed=0;last=Date.now();$('t').textContent='00:00';clearInterval(timer);timer=setInterval(tick,250);v.muted=false;var p=v.play();if(p&&p.catch)p.catch(function(){v.muted=true;v.play()})}
+  else{recording=false;app.classList.remove('recording');clearInterval(timer);v.muted=true;thumbFrom()}
+};
+</script>
+</body>
+</html>
